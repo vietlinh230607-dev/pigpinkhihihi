@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pig Pink v2.7 — Pastel Click Edition 🐷🌸</title>
+
+<!-- favicon (logo nhỏ trên tab) -->
+<link rel="icon" href="pig-logo.png" type="image/png">
+
+<style>
+  :root{
+    --bg-morning: linear-gradient(180deg,#fff7fb 0%, #ffeaf4 60%);
+    --bg-day: linear-gradient(180deg,#fff8f0 0%, #ffdfe6 60%);
+    --bg-evening: linear-gradient(180deg,#ffe6f2 0%, #ffd1e8 60%);
+    --bg-night: linear-gradient(180deg,#0f1022 0%, #3b2b4b 60%);
+  }
+
+  html,body{height:100%;margin:0;padding:0;font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  body {
+    overflow:hidden;
+    position:relative;
+    transition:background 1s ease;
+    user-select:none;
+    background: var(--bg-morning);
+  }
+
+  /* Logo top-left (visible) */
+  .logo {
+    position:fixed; left:12px; top:12px; z-index:40; display:flex; align-items:center; gap:8px;
+    background: rgba(255,255,255,0.95); padding:6px 8px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.12);
+    cursor:pointer;
+  }
+  .logo svg { width:34px; height:34px; display:block; }
+  .logo .label { font-weight:600; font-size:14px; }
+
+  .logo-menu {
+    position:fixed; left:12px; top:56px; z-index:41; display:none;
+    background:rgba(255,255,255,0.98); padding:8px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.12);
+    width:200px;
+  }
+  .logo-menu .item{ padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13px; margin-bottom:6px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.06); display:flex; justify-content:space-between; align-items:center; }
+  .logo-menu .item:last-child{ margin-bottom:0; }
+
+  /* controls positioned near logo */
+  .controls {
+    position:fixed; left:220px; top:12px; z-index:39; display:flex; gap:8px; align-items:center;
+  }
+  .btn {
+    background:#fff; padding:6px 8px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.12);
+    cursor:pointer; font-size:13px;
+  }
+  .vol { display:flex; align-items:center; gap:6px; background:#fff; padding:6px 8px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.12); }
+
+  /* canvas for rainbow trail */
+  #trail { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:2; }
+
+  /* clouds */
+  .cloud { position:absolute; background: rgba(255,255,255,0.95); width:140px; height:70px; border-radius:60px; filter: blur(6px); opacity:0.9; z-index:1; }
+
+  /* pig */
+  .pig {
+    position:absolute;
+    width:170px; height:150px;
+    background:#ffc1cc;
+    border-radius: 50% 50% 44% 44%;
+    box-shadow: 0 8px 18px rgba(20,10,20,0.18);
+    z-index:6;
+    cursor:pointer;
+    transform-origin:center;
+    transition: transform 0.12s linear, left 0.6s linear, top 0.6s linear;
+    display:block;
+  }
+  .pig .ear{ position:absolute; width:50px;height:50px;border-radius:50% 50% 0 0; top:-20px;}
+  .pig .ear.left{ left:12px; transform:rotate(-18deg);}
+  .pig .ear.right{ right:12px; transform:rotate(18deg);}
+  .pig .eye{ position:absolute; width:16px;height:16px;background:#000;border-radius:50%; top:60px;}
+  .pig .eye.left{ left:48px;} .pig .eye.right{ right:48px;}
+  .pig .nose{ position:absolute; width:60px;height:44px;border-radius:50%; top:78px; left:50%; transform:translateX(-50%); }
+  .pig .nostril{ position:absolute; width:8px;height:12px;background:#b34a5c;border-radius:50%; top:12px;}
+  .pig .nostril.left{ left:14px;} .pig .nostril.right{ right:14px;}
+  .mouth { position:absolute; width:56px; height:28px; left:50%; bottom:28px; transform:translateX(-50%); overflow:hidden;}
+  .mouth .smile { width:56px; height:26px; border-bottom:4px solid #6b2a3a; border-radius:0 0 40px 40px; margin-top:4px; }
+
+  /* footprints (small hearts) */
+  .foot { position:absolute; width:18px;height:18px; transform:rotate(45deg); background:#ff8fa3; z-index:3; }
+  .foot::before, .foot::after{ content:""; position:absolute; width:18px;height:18px; background:inherit; border-radius:50%;}
+  .foot::before{ top:-9px; left:0; } .foot::after{ left:-9px; top:0; }
+
+  /* floating hearts */
+  .floatHeart, .floatHeart.big { position:absolute; transform:rotate(45deg); z-index:7; }
+  .floatHeart { width:20px; height:20px; } .floatHeart.big { width:34px; height:34px; }
+  .floatHeart::before, .floatHeart::after { content:""; position:absolute; width:100%; height:100%; border-radius:50%; background:inherit; }
+
+  /* sparkle */
+  .spark { position:absolute; width:6px; height:6px; background: #fff; border-radius:2px; z-index:4; box-shadow:0 0 6px rgba(255,255,255,0.8); opacity:0.9; }
+
+  /* status panel and clock */
+  .panel { position:fixed; right:12px; top:12px; z-index:10; background:rgba(255,255,255,0.9); padding:10px 12px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.12); font-size:13px; color:#222; }
+  .panel .meter { height:8px; background:#eee; border-radius:6px; overflow:hidden; margin-top:6px; }
+  .panel .meter > i { display:block; height:100%; background:linear-gradient(90deg,#ff9aaa,#ff4d6d); width:50%; }
+  .clock { position:fixed; right:12px; bottom:12px; z-index:10; background:rgba(0,0,0,0.6); color:#fff; padding:8px 10px; border-radius:8px; font-family:monospace; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,0.25); }
+
+  /* letter modal */
+  .letter { position: fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0); width:340px; background:#fffafc; border:2px solid #ffb6c1; border-radius:12px; padding:18px; text-align:center; box-shadow:0 10px 30px rgba(255,150,170,0.35); color:#ff4d6d; font-size:16px; z-index:60; transition:0.28s; }
+  .letter.show { transform:translate(-50%,-50%) scale(1); }
+
+  @media (max-width:480px){
+    .controls{ left:140px; } .logo{ left:8px; top:8px; } .logo-menu{ left:8px; top:48px; }
+  }
+</style>
+</head>
+<body>
+  <!-- logo + menu -->
+  <div class="logo" id="logoBtn" title="Chú Heo (nhấn để mở menu)" role="button" tabindex="0">
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="#ffc1cc"/>
+      <ellipse cx="32" cy="36" rx="16" ry="10" fill="#ff9aaa"/>
+      <circle cx="24" cy="26" r="4" fill="#000"/>
+      <circle cx="40" cy="26" r="4" fill="#000"/>
+      <path d="M20 14c4 0 2 8-4 8" stroke="#ffc1cc" stroke-width="4" fill="none" />
+      <path d="M44 14c-4 0-2 8 4 8" stroke="#ffc1cc" stroke-width="4" fill="none" />
+    </svg>
+    <div class="label">Chú Heo</div>
+  </div>
+
+  <div class="logo-menu" id="logoMenu" aria-hidden="true">
+    <div class="item" id="menuSpark">Tắt Sparkles</div>
+    <div class="item" id="menuSkin">Đổi màu heo</div>
+    <div class="item" id="menuEar">Đổi tai heo</div>
+    <div class="item" id="menuSpeed">Tốc độ: <span id="speedLabel">1.3x</span></div>
+    <div class="item" id="menuIntro">Giới thiệu</div>
+  </div>
+
+  <!-- trail canvas -->
+  <canvas id="trail"></canvas>
+
+  <!-- clouds -->
+  <div class="cloud" id="cloud1" style="left:8%; top:6%; width:160px; height:80px; opacity:0.92;"></div>
+  <div class="cloud" id="cloud2" style="left:70%; top:8%; width:220px; height:110px; opacity:0.88;"></div>
+
+  <!-- controls grouped near logo -->
+  <div class="controls" id="controls">
+    <button class="btn" id="playPause">♫ Play</button>
+    <button class="btn" id="feedBtn">🍎 Feed</button>
+    <div class="vol">
+      <label style="font-size:12px;">Vol</label>
+      <input id="volSlider" type="range" min="0" max="100" value="18" />
+    </div>
+  </div>
+
+  <!-- letter modal -->
+  <div class="letter" id="letter">
+    <p style="margin:0 0 8px 0; font-weight:700;">Gửi đến bạn 🐷</p>
+    <p style="margin:0; line-height:1.4;">“Cảm ơn bạn đã ghé thăm thế giới nhỏ này. Hãy luôn mỉm cười và yêu bản thân thật nhiều nhé 💖”</p>
+  </div>
+
+  <!-- pig -->
+  <div class="pig" id="pig" aria-label="chú heo">
+    <div class="ear left" id="earLeft"></div>
+    <div class="ear right" id="earRight"></div>
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+    <div class="nose" id="nose">
+      <div class="nostril left"></div>
+      <div class="nostril right"></div>
+    </div>
+    <div class="mouth"><div class="smile"></div></div>
+  </div>
+
+  <!-- panels -->
+  <div class="panel" id="statusPanel">
+    <div><b>Pet: Chú Heo</b></div>
+    <div style="margin-top:6px">Hạnh phúc <span id="happyText">--</span></div>
+    <div class="meter"><i id="happyBar" style="width:50%"></i></div>
+    <div style="margin-top:8px">Đói <span id="hungerText">--</span></div>
+    <div class="meter"><i id="hungerBar" style="width:50%; background:linear-gradient(90deg,#ffd36a,#ffb84d)"></i></div>
+  </div>
+
+  <div class="clock" id="clock">00:00:00</div>
+
+  <!-- audio -->
+  <audio id="popSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_8d4596b52e.mp3" preload="auto"></audio>
+  <audio id="bgMusic" src="https://cdn.pixabay.com/audio/2023/03/14/audio_c4d39c21e8.mp3" loop preload="auto"></audio>
+  <audio id="eatSound" src="https://cdn.pixabay.com/audio/2021/08/08/audio_3a8b2f68c5.mp3" preload="auto"></audio>
+  <audio id="oinkSound" src="https://cdn.pixabay.com/download/audio/2021/09/01/audio_55b171cfb4.mp3?filename=pig-oink-1.mp3"></audio>
+
+<script>
+/* ======================
+   Initialization
+   ====================== */
+const pig = document.getElementById('pig');
+const earLeft = document.getElementById('earLeft');
+const earRight = document.getElementById('earRight');
+const nose = document.getElementById('nose');
+
+const trailCanvas = document.getElementById('trail');
+const ctx = trailCanvas.getContext('2d');
+let W = trailCanvas.width = window.innerWidth;
+let H = trailCanvas.height = window.innerHeight;
+
+const popSound = document.getElementById('popSound');
+const bgMusic = document.getElementById('bgMusic');
+const eatSound = document.getElementById('eatSound');
+const oinkSound = document.getElementById('oinkSound');
+
+const playPause = document.getElementById('playPause');
+const feedBtn = document.getElementById('feedBtn');
+const volSlider = document.getElementById('volSlider');
+
+const logoBtn = document.getElementById('logoBtn');
+const logoMenu = document.getElementById('logoMenu');
+const menuSpark = document.getElementById('menuSpark');
+const menuSkin = document.getElementById('menuSkin');
+const menuEar = document.getElementById('menuEar');
+const menuSpeed = document.getElementById('menuSpeed');
+const speedLabel = document.getElementById('speedLabel');
+const menuIntro = document.getElementById('menuIntro');
+
+const letter = document.getElementById('letter');
+
+let sparkOn = true;
+let speedCycle = [1.0, 1.5, 2.0]; // user cycles through; default multiplier applied later
+let speedIndex = 0; // we'll use default multiplier 1.3 below
+
+// pastel palette for body & ear (soft gentle colors)
+const pastel = ['#ffc1cc','#ffd7a8','#d1f0ff','#e0ffd9','#f8e6ff','#fff1b8','#ffe7f0'];
+
+/* pet & movement state */
+let pet = { happy:70, hunger:30, lastTick: Date.now() };
+let posX = Math.random()*(W-200)+50, posY = Math.random()*(H-200)+50;
+let velX = (Math.random()*2+1)*(Math.random()<0.5?-1:1), velY = (Math.random()*2+1)*(Math.random()<0.5?-1:1);
+let baseSpeed = 1.2;           // base speed
+let speedMultiplier = 1.3;     // initial multiplier per your request
+let trail = [];
+let lastFoot = 0;
+
+/* helper save/load */
+function savePet(){ localStorage.setItem('pig_pet_v27', JSON.stringify(pet)); }
+function loadPet(){ const s = localStorage.getItem('pig_pet_v27'); if(s) try{ Object.assign(pet, JSON.parse(s)); }catch(e){} }
+loadPet();
+
+/* Resize */
+window.addEventListener('resize', ()=>{ W = trailCanvas.width = window.innerWidth; H = trailCanvas.height = window.innerHeight; });
+
+/* Clouds */
+function moveCloud(id, speed, leftStart, top) {
+  const el = document.getElementById(id); let x = leftStart * W/100; el.style.left = x+'px'; el.style.top = (top*H/100)+'px';
+  function step(){ x += speed; if (x > W + 300) x = -300; el.style.left = x+'px'; requestAnimationFrame(step); }
+  step();
+}
+moveCloud('cloud1', 0.25, 8, 6); moveCloud('cloud2', 0.12, 70, 8);
+
+/* Trail & footprints */
+function pushTrail(x,y){ trail.push({x,y,life:1.0,hue:(Date.now()/50)%360}); if(trail.length>160) trail.shift(); }
+function drawTrail(){ ctx.clearRect(0,0,W,H); for(let i=0;i<trail.length;i++){ const p=trail[i]; ctx.beginPath(); ctx.globalAlpha = p.life*0.95; const size = 22*(p.life); ctx.fillStyle = `hsl(${p.hue},85%,60%)`; ctx.arc(p.x,p.y,size,0,Math.PI*2); ctx.fill(); p.life -= 0.01; } ctx.globalAlpha = 1; while(trail.length && trail[0].life<=0) trail.shift(); }
+function leaveFootprint(x,y){ const el=document.createElement('div'); el.className='foot'; el.style.left=(x-9)+'px'; el.style.top=(y-9)+'px'; el.style.opacity='0.95'; document.body.appendChild(el); setTimeout(()=> el.style.transition='all 1200ms ease',20); setTimeout(()=>{ el.style.opacity='0'; el.style.transform='rotate(45deg) scale(0.6) translateY(-10px)'; },60); setTimeout(()=> el.remove(),1400); }
+
+/* Hearts */
+function createFloatingHeart(x,y,big=false){ const el=document.createElement('div'); el.className='floatHeart'; if(big) el.classList.add('big'); el.style.left=(x-(big?17:10))+'px'; el.style.top=(y-(big?17:10))+'px'; el.style.background = randomColor(); document.body.appendChild(el); const xMove=(Math.random()*220-110)*(big?1.2:1); const yMove=-120 - Math.random()*160; const dur=1000+Math.random()*900; el.animate([{transform:`translate(0,0) scale(${big?1.2:1}) rotate(45deg)`, opacity:1},{transform:`translate(${xMove}px, ${yMove}px) scale(${big?2.0:1.6}) rotate(45deg)`, opacity:0}], {duration:dur, easing:'ease-out', fill:'forwards'}); setTimeout(()=> el.remove(), dur+60); }
+function randomColor(){ const arr=['#ff4d6d','#ff758f','#ff8fa3','#ffccd5','#fa86c4','#ffe07a','#ffd36a']; return arr[Math.floor(Math.random()*arr.length)]; }
+
+/* Pet logic */
+function tickPet(){ const now=Date.now(); const dt = Math.min(60,(now - pet.lastTick)/1000); pet.lastTick = now; pet.hunger = Math.min(100, pet.hunger + 0.5*dt); pet.happy = Math.max(0, pet.happy - 0.12*(pet.hunger/50)*dt); savePet(); updatePanel(); }
+function updatePanel(){ document.getElementById('happyBar').style.width = Math.round(pet.happy)+'%'; document.getElementById('hungerBar').style.width = Math.round(pet.hunger)+'%'; document.getElementById('happyText').textContent = Math.round(pet.happy); document.getElementById('hungerText').textContent = Math.round(pet.hunger); }
+setInterval(tickPet, 3000); updatePanel();
+
+/* Clock */
+function updateClock(){ const d=new Date(); document.getElementById('clock').textContent = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; }
+setInterval(updateClock, 500); updateClock();
+
+/* Movement & AI (no avoid cursor) */
+function seekHearts(){
+  const els = document.querySelectorAll('.floatHeart');
+  if(!els.length) return;
+  let nearest = null, nd = Infinity;
+  const px = posX + pig.offsetWidth/2, py = posY + pig.offsetHeight/2;
+  els.forEach(e=>{
+    const r = e.getBoundingClientRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    const d = Math.hypot(cx - px, cy - py);
+    if(d < nd){ nd = d; nearest = {x:cx,y:cy,el:e}; }
+  });
+  if(nearest && nd < 500){
+    const dx = (nearest.x - px), dy = (nearest.y - py); const mag=Math.hypot(dx,dy)||1;
+    velX += (dx/mag)*0.03; velY += (dy/mag)*0.03;
+    if(nd < 30){
+      if(nearest.el) nearest.el.remove();
+      eatSound.currentTime = 0; eatSound.play();
+      pet.happy = Math.min(100, pet.happy + 6); pet.hunger = Math.max(0, pet.hunger - 8);
+      updatePanel(); savePet(); createFloatingHeart(posX + pig.offsetWidth/2, posY + pig.offsetHeight/3);
+    }
+  }
+}
+
+/* Main loop - use speedMultiplier */
+function pigBounce(){ pig.style.transform='scale(1.06) rotate(-6deg)'; setTimeout(()=> pig.style.transform='scale(1) rotate(0deg)',160); }
+function step(){
+  seekHearts();
+  posX += velX * baseSpeed * speedMultiplier;
+  posY += velY * baseSpeed * speedMultiplier;
+  const pw = pig.offsetWidth, ph = pig.offsetHeight;
+  if(posX < 4){ posX = 4; velX *= -1; pigBounce(); }
+  if(posY < 4){ posY = 4; velY *= -1; pigBounce(); }
+  if(posX + pw > W -4){ posX = W - pw -4; velX *= -1; pigBounce(); }
+  if(posY + ph > H -4){ posY = H - ph -4; velY *= -1; pigBounce(); }
+  velX *= 0.995; velY *= 0.995;
+  pig.style.left = posX + 'px'; pig.style.top = posY + 'px';
+  pushTrail(posX + pw/2, posY + ph/2);
+  if(Date.now() - lastFoot > 300){ leaveFootprint(posX + pw/2 - 8, posY + pig.offsetHeight - 8); lastFoot = Date.now(); }
+  drawTrail();
+  requestAnimationFrame(step);
+}
+requestAnimationFrame(step);
+
+/* Interaction handlers */
+
+// music controls
+let playing = false;
+playPause.addEventListener('click', ()=>{ if(!playing){ bgMusic.volume = volSlider.value/100; bgMusic.play(); playPause.textContent='♫ Pause'; playing=true; } else { bgMusic.pause(); playPause.textContent='♫ Play'; playing=false; } });
+volSlider.addEventListener('input', ()=>{ const v = volSlider.value/100; bgMusic.volume = v; popSound.volume = Math.min(1, v*1.2); oinkSound.volume = Math.min(1, v*1.2); eatSound.volume = Math.min(1, v*1.2); });
+
+// feed
+feedBtn.addEventListener('click', ()=>{ pet.hunger = Math.max(0, pet.hunger - 20); pet.happy = Math.min(100, pet.happy + 8); eatSound.currentTime = 0; eatSound.play(); updatePanel(); savePet(); });
+
+// spawn heart on page click (and start music on first user gesture)
+document.body.addEventListener('click', (e)=>{
+  if(!playing && bgMusic.paused){ bgMusic.volume = volSlider.value/100; bgMusic.play(); playing=true; playPause.textContent='♫ Pause'; }
+  if(e.target === pig || e.target.closest('.btn') || e.target.closest('.logo') || e.target.closest('.logo-menu')) return;
+  createFloatingHeart(e.clientX, e.clientY);
+});
+
+// drag pig
+let dragging=false, dragOffsetX=0, dragOffsetY=0;
+pig.addEventListener('mousedown', (e)=>{ dragging=true; dragOffsetX = e.clientX - posX; dragOffsetY = e.clientY - posY; pig.style.transition='none'; });
+document.addEventListener('mouseup', ()=>{ dragging=false; pig.style.transition='transform 0.12s linear, left 0.6s linear, top 0.6s linear'; });
+document.addEventListener('mousemove', (e)=>{ if(dragging){ posX = e.clientX - dragOffsetX; posY = e.clientY - dragOffsetY; pushTrail(posX + pig.offsetWidth/2, posY + pig.offsetHeight/2); leaveFootprint(posX + pig.offsetWidth/2 - 8, posY + pig.offsetHeight - 8); } });
+
+// single click: oink + hearts
+pig.addEventListener('click', (e)=>{ e.stopPropagation(); oinkSound.currentTime = 0; oinkSound.play(); popSound.currentTime = 0; popSound.play(); for(let i=0;i<6;i++){ createFloatingHeart(posX + pig.offsetWidth/2 + (Math.random()*40-20), posY + pig.offsetHeight/3 + (Math.random()*20-10)); } pet.happy = Math.min(100, pet.happy + 2); pet.hunger = Math.min(100, pet.hunger + 0.6); updatePanel(); savePet(); });
+
+// double-click: run (continuous movement - no teleport)
+let crazyInterval = null, crazyTimeout = null;
+pig.addEventListener('dblclick', (e)=>{
+  e.stopPropagation();
+  startCrazyRun(6000); // 6s by default
+});
+function startCrazyRun(duration = 6000){
+  // boost multiplier and change velocities slightly over time (continuous movement)
+  const origMultiplier = speedMultiplier;
+  speedMultiplier = Math.min(2.5, speedMultiplier * 1.6); // temporary boost
+  pig.style.transform = 'scale(1.06) rotate(6deg)';
+  // every 180ms give a random nudge to velX/velY (no teleport)
+  clearInterval(crazyInterval); clearTimeout(crazyTimeout);
+  crazyInterval = setInterval(()=>{
+    velX += (Math.random()*2 - 1.0) * 1.8;
+    velY += (Math.random()*2 - 1.0) * 1.8;
+    createFloatingHeart(posX + pig.offsetWidth/2, posY + pig.offsetHeight/3, Math.random() < 0.3);
+    pushTrail(posX + pig.offsetWidth/2, posY + pig.offsetHeight/2);
+    leaveFootprint(posX + pig.offsetWidth/2 - 8, posY + pig.offsetHeight - 8);
+  }, 180);
+  crazyTimeout = setTimeout(()=>{
+    clearInterval(crazyInterval);
+    speedMultiplier = origMultiplier;
+    pig.style.transform = '';
+  }, duration);
+}
+
+/* Logo menu interactions */
+logoBtn.addEventListener('click', (e)=>{ e.stopPropagation(); logoMenu.style.display = (logoMenu.style.display === 'block') ? 'none' : 'block'; logoMenu.setAttribute('aria-hidden', logoMenu.style.display !== 'block'); });
+document.addEventListener('click', ()=>{ logoMenu.style.display = 'none'; logoMenu.setAttribute('aria-hidden','true'); });
+
+// spark toggle
+menuSpark.addEventListener('click', ()=>{ sparkOn = !sparkOn; menuSpark.textContent = sparkOn ? 'Tắt Sparkles' : 'Bật Sparkles'; logoMenu.style.display='none'; });
+
+// skin (body color) change (random pastel)
+menuSkin.addEventListener('click', ()=>{
+  const c = pastel[Math.floor(Math.random()*pastel.length)];
+  pig.style.background = c;
+  // update nose slightly darker variant
+  const noseCol = shadeColor(c, -12);
+  nose.style.background = noseCol;
+  // update logo circle color too if visible
+  document.querySelectorAll('.logo svg circle').forEach(circ => circ.setAttribute('fill', pig.style.background));
+  logoMenu.style.display = 'none';
+});
+
+// ear color change (cycle rainbow pastel)
+menuEar.addEventListener('click', ()=>{
+  const c = pastel[Math.floor(Math.random()*pastel.length)];
+  earLeft.style.background = c; earRight.style.background = c;
+  logoMenu.style.display = 'none';
+});
+
+// speed cycle (1x -> 1.5x -> 2x -> back to 1x), but initial default multiplier shown as 1.3x
+menuSpeed.addEventListener('click', ()=>{
+  speedIndex = (speedIndex + 1) % speedCycle.length;
+  const chosen = speedCycle[speedIndex];
+  // We will set base multiplier relative to chosen; maintain 1.3x offset by default:
+  // Map chosen 1.0 => 1.0, chosen 1.5 => 1.5, chosen 2.0 => 2.0, but we preserve visible label (we'll use chosen * (1.3/1.0) only at start)
+  speedMultiplier = chosen * (1.3 / 1.0); // this ensures original feel where default was 1.3
+  speedLabel.textContent = (speedMultiplier).toFixed(2) + 'x';
+  logoMenu.style.display = 'none';
+});
+
+// intro shows letter
+menuIntro.addEventListener('click', ()=>{ letter.classList.toggle('show'); logoMenu.style.display = 'none'; });
+
+/* sparkles */
+function spawnSparkle(){ if(!sparkOn) return; const s = document.createElement('div'); s.className='spark'; const x = Math.random()*W; const y = Math.random()*(H*0.6); s.style.left = x+'px'; s.style.top = y+'px'; s.style.opacity = (0.5+Math.random()*0.6).toString(); document.body.appendChild(s); const dur = 1200 + Math.random()*1600; s.animate([{transform:'scale(0.6)', opacity:s.style.opacity},{transform:'scale(1.4)', opacity:0}], {duration:dur, easing:'ease-out'}); setTimeout(()=> s.remove(), dur+50); }
+setInterval(()=>{ if(Math.random() < 0.45) spawnSparkle(); }, 700);
+
+/* utility: color shade (basic) */
+function shadeColor(hex, percent) {
+  // hex like #rrggbb
+  let R = parseInt(hex.substring(1,3),16);
+  let G = parseInt(hex.substring(3,5),16);
+  let B = parseInt(hex.substring(5,7),16);
+  R = parseInt(R * (100 + percent) / 100);
+  G = parseInt(G * (100 + percent) / 100);
+  B = parseInt(B * (100 + percent) / 100);
+  R = (R<255)?R:255; G=(G<255)?G:255; B=(B<255)?B:255;
+  const RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
+  const GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
+  const BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
+  return "#"+RR+GG+BB;
+}
+
+/* init position and start */
+function initPosition(){ posX = Math.min(Math.max(40, posX), W - pig.offsetWidth - 40); posY = Math.min(Math.max(40, posY), H - pig.offsetHeight - 40); pig.style.left = posX + 'px'; pig.style.top = posY + 'px'; }
+initPosition(); savePet(); setInterval(()=> savePet(), 6000);
+
+/* start default volumes */
+volSlider.dispatchEvent(new Event('input'));
+
+/* start with pastel body and ear */
+pig.style.background = pastel[0]; nose.style.background = shadeColor(pastel[0], -12); earLeft.style.background = pastel[1]; earRight.style.background = pastel[1];
+speedLabel.textContent = speedMultiplier.toFixed(2) + 'x';
+
+</script>
+</body>
+</html>
